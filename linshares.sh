@@ -124,7 +124,7 @@ echo "  real run = '$realrun'"
 
 echo ""
 
-dirs=$(find . -type d | tail +2 | sort)
+dirs=$(find . -type d | tail --lines=+2 | sort)
 for sharedir in $dirs; do
   groupbase=$(echo -n "$sharedir" | sed "s/\.\//$groupprefix/" | sed "s/\//_/g")
   readgroup="${groupbase}_ro"
