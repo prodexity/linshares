@@ -67,7 +67,7 @@ fi
 # parameter defaults
 realrun=false
 sharerootparam="."
-groupprefix="shr_"
+groupprefix="shr"
 groupidstart=3000
 
 # process command line parameters
@@ -126,9 +126,33 @@ echo ""
 
 dirs=$(find . -type d | tail --lines=+2 | sort)
 for sharedir in $dirs; do
-  groupbase=$(echo -n "$sharedir" | sed "s/\.\//$groupprefix/" | sed "s/\//_/g")
-  readgroup="${groupbase}_ro"
-  writegroup="${groupbase}_rw"
+  groupbase=$(echo -n "$sharedir" | sed "s/\.\///" | sed "s/\//_/g")
+  readgroup="${groupprefix}_${groupbase}_ro"
+  writegroup="${groupprefix}_${groupbase}_rw"
+
+  # group names longer than 32 are a problem
+  # in that case, distribute character loss to each path part in the group name
+  # FIXME: note that this is flawed, what if the shortest part is shorter than the amount of characters removed!
+  grplen=${#readgroup}
+  prefixlen=${#groupprefix}
+  if [ $grplen -gt 32 ]; then
+    let "overmax = $grplen - 32" # how many characters are we above the limit
+    IFS='_' read -ra PARTS <<< "$groupbase" # explode around _
+    numparts=${#PARTS[@]}
+    let "availablelen = 32 - 4 - $prefixlen - $numparts + 1" # 4 is the number of fix characters in actual group names, $numparts is the number of internal _ chars
+    let "removenum = overmax / numparts" # this will be the number of characters removed from each part
+    let "remainder = overmax % numparts"
+    if [ $remainder -ne 0 ]; then # if there was a remainder, we need to remove one more
+      let removenum++
+    fi
+    newgroupbase=""
+    for p in "${PARTS[@]}"; do
+      newp=${p::${#p}-$removenum} # remove last characters
+      newgroupbase="${newgroupbase}${newp}_"
+    done
+    readgroup="${groupprefix}_${newgroupbase}ro" # _ is already there
+    writegroup="${groupprefix}_${newgroupbase}rw" # _ is already there
+  fi
 
   create_group $readgroup
   create_group $writegroup
