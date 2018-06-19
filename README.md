@@ -1,3 +1,5 @@
+# THIS PROJECT WAS MOVED TO GITLAB.
+
 # LinShares
 
 Set filesystem permissions for fileshares easily!
